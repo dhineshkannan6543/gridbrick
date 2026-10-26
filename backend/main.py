@@ -208,42 +208,48 @@ def sync_data(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_sync)
     return {"message": "Data synchronization initiated in background.", "status": "processing"}
 
-# Serve frontend static assets from root, frontend/dist, or public/
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-FRONTEND_DIST = os.path.join(ROOT_DIR, "frontend", "dist")
-PUBLIC_DIR = os.path.join(ROOT_DIR, "public")
+from fastapi.responses import HTMLResponse, FileResponse, Response
 
-if os.path.exists(os.path.join(ROOT_DIR, "index.html")):
-    STATIC_DIR = ROOT_DIR
-elif os.path.exists(FRONTEND_DIST):
-    STATIC_DIR = FRONTEND_DIST
-elif os.path.exists(PUBLIC_DIR):
-    STATIC_DIR = PUBLIC_DIR
-else:
-    STATIC_DIR = None
+# Static assets directory bundled within backend/
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+INDEX_PATH = os.path.join(STATIC_DIR, "index.html")
 
-if STATIC_DIR and os.path.exists(STATIC_DIR):
-    assets_dir = os.path.join(STATIC_DIR, "assets")
-    if os.path.exists(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-    
-    @app.get("/{full_path:path}")
-    def serve_react(full_path: str):
-        file_path = os.path.join(STATIC_DIR, full_path)
-        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        index_path = os.path.join(STATIC_DIR, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return {"status": "online", "service": "AeroCast UK API", "version": "1.0.0"}
+if os.path.exists(INDEX_PATH):
+    with open(INDEX_PATH, "r", encoding="utf-8") as f:
+        INDEX_HTML = f.read()
 else:
-    @app.get("/")
-    def root():
-        return {
-            "status": "online",
-            "service": "AeroCast UK - Day-Ahead Renewable Procurement API",
-            "documentation": "/docs"
-        }
+    INDEX_HTML = """<!doctype html><html lang="en"><head><meta charset="UTF-8" /><title>AeroCast UK</title></head><body><div id="root"></div></body></html>"""
+
+assets_dir = os.path.join(STATIC_DIR, "assets")
+if os.path.exists(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+@app.get("/favicon.svg")
+def get_favicon():
+    fav = os.path.join(STATIC_DIR, "favicon.svg")
+    if os.path.exists(fav):
+        return FileResponse(fav, media_type="image/svg+xml")
+    return Response(status_code=404)
+
+@app.get("/icons.svg")
+def get_icons():
+    ico = os.path.join(STATIC_DIR, "icons.svg")
+    if os.path.exists(ico):
+        return FileResponse(ico, media_type="image/svg+xml")
+    return Response(status_code=404)
+
+@app.get("/", response_class=HTMLResponse)
+def serve_index():
+    return HTMLResponse(content=INDEX_HTML, status_code=200)
+
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+def serve_spa(full_path: str):
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    local_file = os.path.join(STATIC_DIR, full_path)
+    if full_path and os.path.exists(local_file) and os.path.isfile(local_file):
+        return FileResponse(local_file)
+    return HTMLResponse(content=INDEX_HTML, status_code=200)
 
 if __name__ == "__main__":
     import uvicorn
