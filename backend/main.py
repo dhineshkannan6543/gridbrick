@@ -208,11 +208,19 @@ def sync_data(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_sync)
     return {"message": "Data synchronization initiated in background.", "status": "processing"}
 
-# Serve frontend static assets from frontend/dist or root public/
-FRONTEND_DIST = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
-PUBLIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public"))
+# Serve frontend static assets from root, frontend/dist, or public/
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+FRONTEND_DIST = os.path.join(ROOT_DIR, "frontend", "dist")
+PUBLIC_DIR = os.path.join(ROOT_DIR, "public")
 
-STATIC_DIR = FRONTEND_DIST if os.path.exists(FRONTEND_DIST) else (PUBLIC_DIR if os.path.exists(PUBLIC_DIR) else None)
+if os.path.exists(os.path.join(ROOT_DIR, "index.html")):
+    STATIC_DIR = ROOT_DIR
+elif os.path.exists(FRONTEND_DIST):
+    STATIC_DIR = FRONTEND_DIST
+elif os.path.exists(PUBLIC_DIR):
+    STATIC_DIR = PUBLIC_DIR
+else:
+    STATIC_DIR = None
 
 if STATIC_DIR and os.path.exists(STATIC_DIR):
     assets_dir = os.path.join(STATIC_DIR, "assets")
