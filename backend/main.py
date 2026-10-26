@@ -208,17 +208,34 @@ def sync_data(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_sync)
     return {"message": "Data synchronization initiated in background.", "status": "processing"}
 
-# Serve frontend static assets if built
+# Serve frontend static assets from frontend/dist or root public/
 FRONTEND_DIST = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
-if os.path.exists(FRONTEND_DIST):
-    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")), name="assets")
+PUBLIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public"))
+
+STATIC_DIR = FRONTEND_DIST if os.path.exists(FRONTEND_DIST) else (PUBLIC_DIR if os.path.exists(PUBLIC_DIR) else None)
+
+if STATIC_DIR and os.path.exists(STATIC_DIR):
+    assets_dir = os.path.join(STATIC_DIR, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
     
     @app.get("/{full_path:path}")
     def serve_react(full_path: str):
-        file_path = os.path.join(FRONTEND_DIST, full_path)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
+        file_path = os.path.join(STATIC_DIR, full_path)
+        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
+        index_path = os.path.join(STATIC_DIR, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"status": "online", "service": "AeroCast UK API", "version": "1.0.0"}
+else:
+    @app.get("/")
+    def root():
+        return {
+            "status": "online",
+            "service": "AeroCast UK - Day-Ahead Renewable Procurement API",
+            "documentation": "/docs"
+        }
 
 if __name__ == "__main__":
     import uvicorn
