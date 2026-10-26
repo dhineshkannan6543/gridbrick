@@ -177,7 +177,7 @@ npm install -g vercel
 # 2. Deploy
 vercel --prod
 ```
-*Live App URL format:* `https://aerocast-uk.vercel.app`
+*Live Vercel App URL:* [https://gridbrick-seven.vercel.app](https://gridbrick-seven.vercel.app)
 
 ---
 
