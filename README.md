@@ -149,24 +149,6 @@ python -m unittest discover -s tests -p "test_*.py"
 
 ## 5. Deployment Guide (Heroku & Vercel)
 
-### Deploying to Heroku
-The repository contains `Procfile`, `runtime.txt`, and `heroku.yml` ready for instant deployment:
-
-```bash
-# 1. Login to Heroku
-heroku login
-
-# 2. Create app
-heroku create aerocast-uk
-
-# 3. Deploy via git
-git push heroku main
-
-# 4. Open live app
-heroku open
-```
-*Live App URL format:* `https://aerocast-uk.herokuapp.com`
-
 ### Deploying to Vercel
 The repository contains `vercel.json` configured for dual static frontend + serverless Python backend routing:
 
